@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
-# Новые поддиректории
+# Поддиректории новой архитектуры
 set(CORE_SOURCES
     core/screenshotcontext.cpp
 )
@@ -28,11 +28,10 @@ set(SERVICES_SOURCES
     services/imageprocessingservice.cpp
 )
 
-# Старые файлы (будем постепенно заменять)
+# Все исходные файлы
 set(SOURCES
     main.cpp
     mainwindow.cpp
-    screenshotcapturer.cpp
     ${CORE_SOURCES}
     ${CAPTURE_SOURCES}
     ${SERVICES_SOURCES}
@@ -40,7 +39,6 @@ set(SOURCES
 
 set(HEADERS
     mainwindow.h
-    screenshotcapturer.h
     core/screenshotcontext.h
     core/editcommand.h
     capture/icapturestrategy.h

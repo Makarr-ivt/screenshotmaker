@@ -32,7 +32,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    // Новая архитектура
+    // Новая архитектура - полная замена ScreenshotCapturer
     ScreenshotContext m_screenshotContext;
     CaptureManager m_captureManager;
     FileExportService m_fileExportService;

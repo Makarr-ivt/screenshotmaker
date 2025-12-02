@@ -1,5 +1,7 @@
-﻿#include "ui_mainwindow.h"
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
+// Стандартные Qt заголовки
 #include <QThread>
 #include <QTimer>
 #include <QResizeEvent>
@@ -10,6 +12,7 @@
 #include <QDir>
 #include <QScreen>
 
+// Заголовки новой архитектуры
 #include "capture/fullscreencapturestrategy.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -18,13 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Подключаем сигналы к слотам
+    // Подключаем сигналы новой архитектуры
     connect(&m_screenshotContext, &ScreenshotContext::imageChanged,
             this, &MainWindow::onScreenshotContextChanged);
-    connect(&m_screenshotContext, &ScreenshotContext::canUndoChanged,
-            this, &MainWindow::updateButtonStates);
-    connect(&m_screenshotContext, &ScreenshotContext::canRedoChanged,
-            this, &MainWindow::updateButtonStates);
 
     updateUI();
 
@@ -66,10 +65,6 @@ void MainWindow::on_captureFullScreenButton_clicked()
 
     // Если скриншот удался, обновляем UI
     if (m_screenshotContext.hasImage()) {
-        updateScreenshotDisplay();
-        updateInfoLabel();
-        updateButtonStates();
-
         // Временно меняем заголовок для обратной связи
         this->setWindowTitle("ScreenshotMaker - Захвачено!");
         QTimer::singleShot(1500, this, [this]() {
@@ -84,7 +79,7 @@ void MainWindow::on_captureFullScreenButton_clicked()
 
 void MainWindow::on_captureAreaButton_clicked()
 {
-    // TODO: Реализовать выбор прямоугольной области
+    // TODO: Будет реализовано в Фазе 2
     QMessageBox::information(this, "В разработке",
                              "Выбор области будет реализован в следующей версии.");
 }
@@ -120,7 +115,7 @@ void MainWindow::on_saveButton_clicked()
             // Успех - показываем сообщение
             QMessageBox::information(this, "Успешно", QString("Скриншот сохранен в:\n%1").arg(fileName));
 
-            // Можно добавить визуальную обратную связь
+            // Визуальная обратная связь
             QString originalText = ui->saveButton->text();
             ui->saveButton->setText("Сохранено!");
 
@@ -141,7 +136,7 @@ void MainWindow::on_exitButton_clicked()
 
 void MainWindow::on_copyToClipboardButton_clicked()
 {
-    // Упрощенная проверка
+    // Проверяем, есть ли скриншот
     if (!m_screenshotContext.hasImage()) {
         QMessageBox msgBox;
         msgBox.setIcon(QMessageBox::Warning);
@@ -154,7 +149,7 @@ void MainWindow::on_copyToClipboardButton_clicked()
     // Копируем с использованием сервиса
     m_clipboardService.copyToClipboard(m_screenshotContext.image());
 
-    // Простая обратная связь
+    // Визуальная обратная связь
     ui->copyToClipboardButton->setText("Скопировано!");
     QTimer::singleShot(1000, this, [this]() {
         ui->copyToClipboardButton->setText("Копировать в буфер");
@@ -173,7 +168,7 @@ void MainWindow::updateUI()
     // Изначально кнопки действий отключены
     ui->saveButton->setEnabled(false);
     ui->copyToClipboardButton->setEnabled(false);
-    ui->captureAreaButton->setEnabled(false);
+    ui->captureAreaButton->setEnabled(false); // Пока не реализовано
 
     // Устанавливаем начальный текст
     ui->screenshotLabel->setText("Нажмите 'Весь экран' для захвата");
