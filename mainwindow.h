@@ -1,7 +1,7 @@
-﻿#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
+#include "screenshotcapturer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,7 +17,19 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void on_captureFullScreenButton_clicked();
+    void on_captureAreaButton_clicked();
+    void on_saveButton_clicked();
+    void on_exitButton_clicked();
+    void on_copyToClipboardButton_clicked();
+
 private:
     Ui::MainWindow *ui;
+    ScreenshotCapturer m_capturer;
+    QPixmap m_currentScreenshot;
+    
+    void updateUI();
+    void updateScreenshotDisplay();
+    void updateInfoLabel();
 };
-#endif // MAINWINDOW_H
