@@ -5,7 +5,6 @@
 #include <QTimer>
 #include <QResizeEvent>
 #include <QGuiApplication>
-#include <QClipboard>
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -128,7 +127,24 @@ void MainWindow::on_exitButton_clicked()
 
 void MainWindow::on_copyToClipboardButton_clicked()
 {
-    // TODO: Реализовать
+    // Упрощенная проверка
+    if (m_currentScreenshot.isNull()) {
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setWindowTitle("Нет скриншота");
+        msgBox.setText("Сначала сделайте скриншот.");
+        msgBox.exec();
+        return;
+    }
+
+    // Копируем
+    m_capturer.copyToClipboard(m_currentScreenshot);
+
+    // Простая обратная связь
+    ui->copyToClipboardButton->setText("Скопировано!");
+    QTimer::singleShot(1000, this, [this]() {
+        ui->copyToClipboardButton->setText("Копировать в буфер");
+    });
 }
 
 void MainWindow::updateUI()

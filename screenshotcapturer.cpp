@@ -2,6 +2,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileInfo>
+#include <QClipboard>
 
 QPixmap ScreenshotCapturer::captureFullScreen()
 {
@@ -38,10 +39,17 @@ bool ScreenshotCapturer::saveToFile(const QPixmap& screenshot, const QString& fi
     return success;
 }
 
-void ScreenshotCapturer::copyToClipboard(const QPixmap& screenshot) 
-{ 
-    Q_UNUSED(screenshot); 
-    // TODO: Реализовать
+void ScreenshotCapturer::copyToClipboard(const QPixmap& screenshot)
+{
+    if (screenshot.isNull()) {
+        return;
+    }
+
+    // Получаем глобальный буфер обмена
+    QClipboard *clipboard = QGuiApplication::clipboard();
+
+    // Копируем изображение в буфер обмена
+    clipboard->setPixmap(screenshot);
 }
 
 QString ScreenshotCapturer::getScreenshotInfo(const QPixmap& screenshot) const
