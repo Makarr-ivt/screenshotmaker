@@ -1,4 +1,4 @@
-#include "rectanglecapturestrategy.h"
+﻿#include "rectanglecapturestrategy.h"
 #include <QGuiApplication>
 #include <QScreen>
 
@@ -9,10 +9,7 @@ RectangleCaptureStrategy::RectangleCaptureStrategy(const QRect &area)
 
 QPixmap RectangleCaptureStrategy::capture()
 {
-    QScreen *screen = QGuiApplication::primaryScreen();
-    if (screen && m_area.isValid()) {
-        QPixmap fullScreen = screen->grabWindow(0);
-        return fullScreen.copy(m_area);
-    }
-    return QPixmap();
+        // Эта стратегия больше не используется напрямую
+        // Вместо нее используем вырезание из m_fullScreenShot
+        return QPixmap();
 }

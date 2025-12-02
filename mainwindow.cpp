@@ -11,9 +11,12 @@
 #include <QDateTime>
 #include <QDir>
 #include <QScreen>
+#include <QShortcut>
 
 // Заголовки новой архитектуры
 #include "capture/fullscreencapturestrategy.h"
+#include "capture/rectanglecapturestrategy.h"
+#include "ui/rectanglesselectionoverlay.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -79,9 +82,115 @@ void MainWindow::on_captureFullScreenButton_clicked()
 
 void MainWindow::on_captureAreaButton_clicked()
 {
-    // TODO: Будет реализовано в Фазе 2
-    QMessageBox::information(this, "В разработке",
-                             "Выбор области будет реализован в следующей версии.");
+    startAreaSelection();
+}
+
+void MainWindow::startAreaSelection()
+{
+    // Сохраняем состояние окна
+    m_wasMaximized = this->isMaximized();
+    m_lastWindowGeometry = this->geometry();
+
+    // Скрываем главное окно
+    this->hide();
+
+    // Ждем, чтобы окно успело скрыться
+    QTimer::singleShot(100, this, [this]() {
+        // Делаем скриншот всего экрана ДО показа оверлея
+        m_captureManager.setStrategy(std::make_unique<FullScreenCaptureStrategy>());
+        m_fullScreenShot = m_captureManager.capture();
+
+        if (m_fullScreenShot.isNull()) {
+            QMessageBox::warning(this, "Ошибка", "Не удалось сделать снимок экрана.");
+            showMainWindow();
+            return;
+        }
+
+        // Создаем и показываем оверлей
+        RectangleSelectionOverlay *overlay = new RectangleSelectionOverlay();
+        overlay->setAttribute(Qt::WA_DeleteOnClose);
+
+        // Подключаем сигналы оверлея
+        connect(overlay, &RectangleSelectionOverlay::selectionCompleted,
+                this, [this](const QRect &area) {
+                    completeAreaSelection(area);
+                });
+
+        connect(overlay, &RectangleSelectionOverlay::selectionCancelled,
+                this, &MainWindow::showMainWindow);
+
+        // Гарантируем показ главного окна при любом исходе
+        connect(overlay, &QObject::destroyed, this, &MainWindow::showMainWindow);
+
+        // Показываем оверлей
+        overlay->showFullScreen();
+    });
+}
+
+void MainWindow::completeAreaSelection(const QRect &area)
+{
+    if (area.isValid() && area.width() > 10 && area.height() > 10) {
+        // Получаем primary screen
+        QScreen *primaryScreen = QGuiApplication::primaryScreen();
+        if (!primaryScreen) {
+            QMessageBox::warning(this, "Ошибка", "Не удалось получить экран.");
+            showMainWindow();
+            return;
+        }
+
+        // Учитываем device pixel ratio (для HiDPI экранов)
+        qreal dpr = primaryScreen->devicePixelRatio();
+
+        // Конвертируем координаты с учетом DPI
+        QRect scaledArea(
+            qRound(area.x() * dpr),
+            qRound(area.y() * dpr),
+            qRound(area.width() * dpr),
+            qRound(area.height() * dpr)
+            );
+
+        // Вырезаем область из скриншота
+        if (scaledArea.intersected(m_fullScreenShot.rect()).isValid()) {
+            QPixmap areaScreenshot = m_fullScreenShot.copy(scaledArea);
+
+            if (!areaScreenshot.isNull()) {
+                // Масштабируем обратно для отображения
+                areaScreenshot.setDevicePixelRatio(dpr);
+                m_screenshotContext.setImage(areaScreenshot);
+
+                this->setWindowTitle("ScreenshotMaker - Область захвачена!");
+                QTimer::singleShot(1500, this, [this]() {
+                    this->setWindowTitle("ScreenshotMaker");
+                });
+            } else {
+                QMessageBox::warning(this, "Ошибка", "Не удалось вырезать выбранную область.");
+            }
+        } else {
+            QMessageBox::warning(this, "Ошибка", "Выбранная область вне границ экрана.");
+        }
+    } else {
+        QMessageBox::warning(this, "Некорректная область",
+                             "Выделенная область слишком мала или некорректна.");
+    }
+
+    showMainWindow();
+}
+
+void MainWindow::showMainWindow()
+{
+    // Показываем главное окно
+    this->show();
+
+    // Восстанавливаем состояние окна
+    if (m_wasMaximized) {
+        this->showMaximized();
+    } else {
+        this->setGeometry(m_lastWindowGeometry);
+    }
+
+    // Делаем окно активным
+    this->activateWindow();
+    this->raise();
 }
 
 void MainWindow::on_saveButton_clicked()
@@ -168,7 +277,9 @@ void MainWindow::updateUI()
     // Изначально кнопки действий отключены
     ui->saveButton->setEnabled(false);
     ui->copyToClipboardButton->setEnabled(false);
-    ui->captureAreaButton->setEnabled(false); // Пока не реализовано
+
+    // Активируем кнопку выбора области
+    ui->captureAreaButton->setEnabled(true);
 
     // Устанавливаем начальный текст
     ui->screenshotLabel->setText("Нажмите 'Весь экран' для захвата");
@@ -216,9 +327,6 @@ void MainWindow::updateButtonStates()
     bool hasImage = m_screenshotContext.hasImage();
     ui->saveButton->setEnabled(hasImage);
     ui->copyToClipboardButton->setEnabled(hasImage);
-
-    // TODO: Активировать кнопку выбора области, когда она будет реализована
-    ui->captureAreaButton->setEnabled(false);
 }
 
 // Добавляем обработчик изменения размера окна

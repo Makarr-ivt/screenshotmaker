@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <QMainWindow>
+#include <QRect>
+
 #include "core/screenshotcontext.h"
 #include "capture/capturemanager.h"
 #include "services/fileexportservice.h"
@@ -37,6 +39,16 @@ private:
     CaptureManager m_captureManager;
     FileExportService m_fileExportService;
     ClipboardService m_clipboardService;
+
+    // Для захвата области
+    void startAreaSelection();
+    void completeAreaSelection(const QRect &area);
+    void showMainWindow();
+
+    // Временное состояние для захвата области
+    QRect m_lastWindowGeometry;
+    bool m_wasMaximized = false;
+    QPixmap m_fullScreenShot;  // Добавляем это поле для хранения скриншота ДО показа оверлея
 
     void updateUI();
     void updateScreenshotDisplay();

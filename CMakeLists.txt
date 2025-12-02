@@ -28,6 +28,12 @@ set(SERVICES_SOURCES
     services/imageprocessingservice.cpp
 )
 
+# Новые UI файлы для захвата области
+set(UI_SOURCES
+    ui/rectanglesselectionoverlay.cpp
+    ui/selectionvisualizer.cpp
+)
+
 # Все исходные файлы
 set(SOURCES
     main.cpp
@@ -35,19 +41,38 @@ set(SOURCES
     ${CORE_SOURCES}
     ${CAPTURE_SOURCES}
     ${SERVICES_SOURCES}
+    ${UI_SOURCES}
 )
 
-set(HEADERS
-    mainwindow.h
+set(CORE_HEADERS
     core/screenshotcontext.h
     core/editcommand.h
+)
+
+set(CAPTURE_HEADERS
     capture/icapturestrategy.h
     capture/fullscreencapturestrategy.h
     capture/rectanglecapturestrategy.h
     capture/capturemanager.h
+)
+
+set(SERVICES_HEADERS
     services/fileexportservice.h
     services/clipboardservice.h
     services/imageprocessingservice.h
+)
+
+set(UI_HEADERS
+    ui/rectanglesselectionoverlay.h
+    ui/selectionvisualizer.h
+)
+
+set(HEADERS
+    mainwindow.h
+    ${CORE_HEADERS}
+    ${CAPTURE_HEADERS}
+    ${SERVICES_HEADERS}
+    ${UI_HEADERS}
 )
 
 set(FORMS
