@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QMainWindow>
 #include "screenshotcapturer.h"
@@ -32,4 +32,7 @@ private:
     void updateUI();
     void updateScreenshotDisplay();
     void updateInfoLabel();
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 };

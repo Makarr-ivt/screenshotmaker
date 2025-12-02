@@ -1,15 +1,22 @@
-#include "screenshotcapturer.h"
+﻿#include "screenshotcapturer.h"
+#include <QGuiApplication>
+#include <QScreen>
 
-QPixmap ScreenshotCapturer::captureFullScreen() 
-{ 
-    return QPixmap(); // TODO: Реализовать
+QPixmap ScreenshotCapturer::captureFullScreen()
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (screen) {
+        return screen->grabWindow(0);
+    }
+    return QPixmap();
 }
 
-QPixmap ScreenshotCapturer::captureArea(const QRect& area) 
-{ 
-    Q_UNUSED(area); 
-    return QPixmap(); // TODO: Реализовать
+QPixmap ScreenshotCapturer::captureArea(const QRect& area)
+{
+    Q_UNUSED(area);
+    return QPixmap(); // TODO: реализовать позже
 }
+
 
 bool ScreenshotCapturer::saveToFile(const QPixmap& screenshot, const QString& filePath) 
 { 
@@ -24,8 +31,10 @@ void ScreenshotCapturer::copyToClipboard(const QPixmap& screenshot)
     // TODO: Реализовать
 }
 
-QString ScreenshotCapturer::getScreenshotInfo(const QPixmap& screenshot) 
-{ 
-    Q_UNUSED(screenshot); 
-    return QString(); // TODO: Реализовать
+QString ScreenshotCapturer::getScreenshotInfo(const QPixmap& screenshot) const
+{
+    if (screenshot.isNull()) {
+        return "Размер: 0×0";
+    }
+    return QString("Размер: %1×%2").arg(screenshot.width()).arg(screenshot.height());
 }
