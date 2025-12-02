@@ -1,6 +1,7 @@
 ﻿#include "screenshotcapturer.h"
 #include <QGuiApplication>
 #include <QScreen>
+#include <QFileInfo>
 
 QPixmap ScreenshotCapturer::captureFullScreen()
 {
@@ -17,12 +18,24 @@ QPixmap ScreenshotCapturer::captureArea(const QRect& area)
     return QPixmap(); // TODO: реализовать позже
 }
 
+bool ScreenshotCapturer::saveToFile(const QPixmap& screenshot, const QString& filePath)
+{
+    if (screenshot.isNull() || filePath.isEmpty()) {
+        return false;
+    }
 
-bool ScreenshotCapturer::saveToFile(const QPixmap& screenshot, const QString& filePath) 
-{ 
-    Q_UNUSED(screenshot); 
-    Q_UNUSED(filePath); 
-    return false; // TODO: Реализовать
+    // Определяем формат по расширению файла
+    QString format = "PNG"; // формат по умолчанию
+    QString suffix = QFileInfo(filePath).suffix().toLower();
+
+    if (suffix == "jpg" || suffix == "jpeg") {
+        format = "JPG";
+    } else if (suffix == "bmp") {
+        format = "BMP";
+    }
+    // Пытаемся сохранить изображение
+    bool success = screenshot.save(filePath, format.toUtf8().constData());
+    return success;
 }
 
 void ScreenshotCapturer::copyToClipboard(const QPixmap& screenshot) 

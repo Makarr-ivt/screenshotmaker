@@ -7,6 +7,11 @@
 #include <QGuiApplication>
 #include <QClipboard>
 
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QDateTime>
+#include <QDir>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -75,7 +80,45 @@ void MainWindow::on_captureAreaButton_clicked()
 
 void MainWindow::on_saveButton_clicked()
 {
-    // TODO: Реализовать
+    // Проверяем, есть ли скриншот для сохранения
+    if (m_currentScreenshot.isNull()) {
+        QMessageBox::warning(this,
+                             "Нет скриншота",
+                             "Сначала сделайте скриншот, чтобы сохранить его.");
+        return;
+    }
+
+    // Генерируем имя файла по умолчанию с датой и временем
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+    QString defaultFileName = QDir::homePath() + "/Снимок_" + timestamp + ".png";
+
+    // Открываем диалог сохранения файла
+    QString fileName = QFileDialog::getSaveFileName(
+        this,                                      // родительское окно
+        "Сохранить скриншот",                     // заголовок
+        defaultFileName,                          // начальный путь
+        "Изображения (*.png *.jpg *.jpeg *.bmp);;PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)" // фильтры
+        );
+
+    // Если пользователь выбрал файл (не нажал "Отмена")
+    if (!fileName.isEmpty()) {
+        // Пытаемся сохранить
+        bool success = m_capturer.saveToFile(m_currentScreenshot, fileName);
+
+        if (success) {
+            // Успех - показываем сообщение
+            QMessageBox::information(this, "Успешно", QString("Скриншот сохранен в:\n%1").arg(fileName));
+
+            // Можно добавить визуальную обратную связь
+            QString originalText = ui->saveButton->text();
+            ui->saveButton->setText("Сохранено!");
+
+            // Через секунду возвращаем оригинальный текст
+            QTimer::singleShot(1000, this, [this, originalText]() {
+                ui->saveButton->setText(originalText);
+            });
+        }
+    }
 }
 
 void MainWindow::on_exitButton_clicked()
