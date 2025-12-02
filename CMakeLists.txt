@@ -11,15 +11,45 @@ set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
+# Новые поддиректории
+set(CORE_SOURCES
+    core/screenshotcontext.cpp
+)
+
+set(CAPTURE_SOURCES
+    capture/fullscreencapturestrategy.cpp
+    capture/rectanglecapturestrategy.cpp
+    capture/capturemanager.cpp
+)
+
+set(SERVICES_SOURCES
+    services/fileexportservice.cpp
+    services/clipboardservice.cpp
+    services/imageprocessingservice.cpp
+)
+
+# Старые файлы (будем постепенно заменять)
 set(SOURCES
     main.cpp
     mainwindow.cpp
     screenshotcapturer.cpp
+    ${CORE_SOURCES}
+    ${CAPTURE_SOURCES}
+    ${SERVICES_SOURCES}
 )
 
 set(HEADERS
     mainwindow.h
     screenshotcapturer.h
+    core/screenshotcontext.h
+    core/editcommand.h
+    capture/icapturestrategy.h
+    capture/fullscreencapturestrategy.h
+    capture/rectanglecapturestrategy.h
+    capture/capturemanager.h
+    services/fileexportservice.h
+    services/clipboardservice.h
+    services/imageprocessingservice.h
 )
 
 set(FORMS
@@ -32,3 +62,6 @@ target_link_libraries(screenshotmaker PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 if(WIN32)
     set_target_properties(screenshotmaker PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
+
+# Устанавливаем выходной каталог
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)

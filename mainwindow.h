@@ -1,7 +1,10 @@
 ﻿#pragma once
 
 #include <QMainWindow>
-#include "screenshotcapturer.h"
+#include "core/screenshotcontext.h"
+#include "capture/capturemanager.h"
+#include "services/fileexportservice.h"
+#include "services/clipboardservice.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -24,14 +27,21 @@ private slots:
     void on_exitButton_clicked();
     void on_copyToClipboardButton_clicked();
 
+    void onScreenshotContextChanged();
+
 private:
     Ui::MainWindow *ui;
-    ScreenshotCapturer m_capturer;
-    QPixmap m_currentScreenshot;
-    
+
+    // Новая архитектура
+    ScreenshotContext m_screenshotContext;
+    CaptureManager m_captureManager;
+    FileExportService m_fileExportService;
+    ClipboardService m_clipboardService;
+
     void updateUI();
     void updateScreenshotDisplay();
     void updateInfoLabel();
+    void updateButtonStates();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

@@ -25,18 +25,17 @@ bool ScreenshotCapturer::saveToFile(const QPixmap& screenshot, const QString& fi
         return false;
     }
 
-    // Определяем формат по расширению файла
-    QString format = "PNG"; // формат по умолчанию
-    QString suffix = QFileInfo(filePath).suffix().toLower();
+    static QMap<QString, const char*> formatMap = {
+        {"jpg", "JPG"},
+        {"jpeg", "JPG"},
+        {"png", "PNG"},
+        {"bmp", "BMP"}
+    };
 
-    if (suffix == "jpg" || suffix == "jpeg") {
-        format = "JPG";
-    } else if (suffix == "bmp") {
-        format = "BMP";
-    }
-    // Пытаемся сохранить изображение
-    bool success = screenshot.save(filePath, format.toUtf8().constData());
-    return success;
+    QString suffix = QFileInfo(filePath).suffix().toLower();
+    const char* format = formatMap.value(suffix, "PNG");
+
+    return screenshot.save(filePath, format);
 }
 
 void ScreenshotCapturer::copyToClipboard(const QPixmap& screenshot)
