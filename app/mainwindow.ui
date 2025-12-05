@@ -37,24 +37,24 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="captureFullScreenButton">
-        <property name="text">
-         <string>Весь экран</string>
-        </property>
         <property name="toolTip">
          <string>Сделать снимок всего экрана</string>
+        </property>
+        <property name="text">
+         <string>Весь экран</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="captureAreaButton">
         <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Выделить область</string>
+         <bool>true</bool>
         </property>
         <property name="toolTip">
          <string>Выделить область для снимка</string>
+        </property>
+        <property name="text">
+         <string>Выделить область</string>
         </property>
        </widget>
       </item>
@@ -76,21 +76,21 @@
         <property name="enabled">
          <bool>false</bool>
         </property>
-        <property name="text">
-         <string>Сохранить</string>
-        </property>
         <property name="toolTip">
          <string>Сохранить скриншот в файл</string>
+        </property>
+        <property name="text">
+         <string>Сохранить</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="exitButton">
-        <property name="text">
-         <string>Выход</string>
-        </property>
         <property name="toolTip">
          <string>Закрыть приложение</string>
+        </property>
+        <property name="text">
+         <string>Выход</string>
         </property>
        </widget>
       </item>

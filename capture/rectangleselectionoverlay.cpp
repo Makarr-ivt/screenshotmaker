@@ -1,4 +1,4 @@
-﻿#include "rectanglesselectionoverlay.h"
+﻿#include "rectangleselectionoverlay.h"
 #include <QPainter>
 #include <QKeyEvent>
 #include <QGuiApplication>

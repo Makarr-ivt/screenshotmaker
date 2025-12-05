@@ -11,80 +11,77 @@ set(CMAKE_AUTORCC ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
-# Поддиректории новой архитектуры
-set(CORE_SOURCES
-    core/screenshotcontext.cpp
-)
-
-set(CAPTURE_SOURCES
-    capture/fullscreencapturestrategy.cpp
-    capture/rectanglecapturestrategy.cpp
-    capture/capturemanager.cpp
-)
-
-set(SERVICES_SOURCES
-    services/fileexportservice.cpp
-    services/clipboardservice.cpp
-    services/imageprocessingservice.cpp
-)
-
-# Новые UI файлы для захвата области
-set(UI_SOURCES
-    ui/rectanglesselectionoverlay.cpp
-    ui/selectionvisualizer.cpp
-)
-
-# Все исходные файлы
-set(SOURCES
-    main.cpp
-    mainwindow.cpp
-    ${CORE_SOURCES}
-    ${CAPTURE_SOURCES}
-    ${SERVICES_SOURCES}
-    ${UI_SOURCES}
-)
-
-set(CORE_HEADERS
-    core/screenshotcontext.h
-    core/editcommand.h
-)
-
 set(CAPTURE_HEADERS
     capture/icapturestrategy.h
     capture/fullscreencapturestrategy.h
-    capture/rectanglecapturestrategy.h
     capture/capturemanager.h
+    capture/rectangleselectionoverlay.h
+)
+set(CAPTURE_SOURCES
+    capture/fullscreencapturestrategy.cpp
+    capture/capturemanager.cpp
+    capture/rectangleselectionoverlay.cpp
 )
 
 set(SERVICES_HEADERS
     services/fileexportservice.h
     services/clipboardservice.h
-    services/imageprocessingservice.h
+)
+set(SERVICES_SOURCES
+    services/fileexportservice.cpp
+    services/clipboardservice.cpp
 )
 
-set(UI_HEADERS
-    ui/rectanglesselectionoverlay.h
-    ui/selectionvisualizer.h
+set(CONTROLLER_HEADERS
+    controllers/screenshotcontroller.h
+)
+set(CONTROLLER_SOURCES
+    controllers/screenshotcontroller.cpp
 )
 
-set(HEADERS
-    mainwindow.h
-    ${CORE_HEADERS}
+set(APP_HEADERS
+    app/mainwindow.h
+    app/screenshotviewer.h
+)
+set(APP_SOURCES
+    app/main.cpp
+    app/mainwindow.cpp
+    app/screenshotviewer.cpp
+)
+
+set(APP_FORMS
+    app/mainwindow.ui
+)
+
+add_executable(screenshotmaker
+    ${APP_SOURCES}
+    ${APP_HEADERS}
+    ${APP_FORMS}
+
+    ${CAPTURE_SOURCES}
     ${CAPTURE_HEADERS}
+
+    ${SERVICES_SOURCES}
     ${SERVICES_HEADERS}
-    ${UI_HEADERS}
+
+    ${CONTROLLER_SOURCES}
+    ${CONTROLLER_HEADERS}
 )
 
-set(FORMS
-    mainwindow.ui
+target_include_directories(screenshotmaker PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/controllers
+    ${CMAKE_CURRENT_SOURCE_DIR}/capture
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
 )
 
-add_executable(screenshotmaker ${SOURCES} ${HEADERS} ${FORMS})
+
 target_link_libraries(screenshotmaker PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
+# Windows: запуск приложения без консольного окна
 if(WIN32)
     set_target_properties(screenshotmaker PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-# Устанавливаем выходной каталог
+# Выходной каталог
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
