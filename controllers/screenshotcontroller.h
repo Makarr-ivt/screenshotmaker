@@ -3,46 +3,44 @@
 #include <QObject>
 #include <QPixmap>
 #include <memory>
-#include <QWidget>
 
-#include "capturemanager.h"
-#include "fileexportservice.h"
-#include "clipboardservice.h"
+#include "icapturestrategy.h"
+
+class QWidget;
+class RectangleSelectionOverlay;
 
 class ScreenshotController : public QObject
 {
     Q_OBJECT
 public:
     explicit ScreenshotController(QObject *parent = nullptr);
-    ~ScreenshotController() override;
 
-    // Основные операции
-    void captureFullScreen(QWidget *windowToHide = nullptr);
-    void startAreaSelection(QWidget *windowToHide = nullptr);
-    bool saveImageToFile(QWidget *parent = nullptr); // открывает диалог сохранения
-    void copyImageToClipboard();
+    // Захват
+    void captureFullScreen(QWidget *parentWidget);
+    void startAreaSelection(QWidget *parentWidget);
 
-    QPixmap currentImage() const;
+    // Работа с изображением
     bool hasImage() const;
+    QPixmap currentImage() const;
+
+    // Экспорт
+    bool saveImageToFile(QWidget *parentWidget);
+    void copyImageToClipboard();
 
 signals:
     void imageChanged();
-    void errorOccured(const QString &message);
     void infoMessage(const QString &message);
+    void errorOccured(const QString &message);
 
 private:
-    // внутренние помощники
-    void setImage(const QPixmap &pix);
+    void setImage(const QPixmap &pixmap);
+    void onAreaSelected(const QRect &rect);
 
-    // зависимости (встроены, как в старом MainWindow)
-    // используем оригинальные классы, уже в проекте
-    CaptureManager m_captureManager;
-    FileExportService m_fileExportService;
-    ClipboardService m_clipboardService;
+    QString fileDialogFilter() const;
+    QString formatFromExtension(const QString &filePath) const;
 
-    // локальное хранилище текущего изображения
+private:
     QPixmap m_currentImage;
-
-    // для выбора области (временное хранение полного скриншота)
-    QPixmap m_fullScreenShot;
+    std::unique_ptr<ICaptureStrategy> m_fullScreenStrategy;
+    RectangleSelectionOverlay *m_overlay = nullptr;
 };

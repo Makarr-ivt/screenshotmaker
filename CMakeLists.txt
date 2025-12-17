@@ -14,22 +14,11 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 set(CAPTURE_HEADERS
     capture/icapturestrategy.h
     capture/fullscreencapturestrategy.h
-    capture/capturemanager.h
     capture/rectangleselectionoverlay.h
 )
 set(CAPTURE_SOURCES
     capture/fullscreencapturestrategy.cpp
-    capture/capturemanager.cpp
     capture/rectangleselectionoverlay.cpp
-)
-
-set(SERVICES_HEADERS
-    services/fileexportservice.h
-    services/clipboardservice.h
-)
-set(SERVICES_SOURCES
-    services/fileexportservice.cpp
-    services/clipboardservice.cpp
 )
 
 set(CONTROLLER_HEADERS
@@ -61,9 +50,6 @@ add_executable(screenshotmaker
     ${CAPTURE_SOURCES}
     ${CAPTURE_HEADERS}
 
-    ${SERVICES_SOURCES}
-    ${SERVICES_HEADERS}
-
     ${CONTROLLER_SOURCES}
     ${CONTROLLER_HEADERS}
 )
@@ -72,7 +58,6 @@ target_include_directories(screenshotmaker PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/app
     ${CMAKE_CURRENT_SOURCE_DIR}/controllers
     ${CMAKE_CURRENT_SOURCE_DIR}/capture
-    ${CMAKE_CURRENT_SOURCE_DIR}/services
 )
 
 

@@ -1,38 +1,20 @@
 ﻿#include "screenshotcontroller.h"
 
-#include <QThread>
-#include <QTimer>
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QGuiApplication>
+#include <QClipboard>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QMap>
 #include <QScreen>
+#include <QTimer>
 
 #include "fullscreencapturestrategy.h"
-#include "rectanglecapturestrategy.h"
 #include "rectangleselectionoverlay.h"
-#include "fileexportservice.h"
-#include "clipboardservice.h"
-#include "capturemanager.h"
 
 ScreenshotController::ScreenshotController(QObject *parent)
-    : QObject(parent),
-    m_captureManager(),
-    m_fileExportService(),
-    m_clipboardService()
+    : QObject(parent)
 {
-}
-
-ScreenshotController::~ScreenshotController() = default;
-
-void ScreenshotController::setImage(const QPixmap &pix)
-{
-    m_currentImage = pix;
-    emit imageChanged();
-}
-
-QPixmap ScreenshotController::currentImage() const
-{
-    return m_currentImage;
+    m_fullScreenStrategy = std::make_unique<FullScreenCaptureStrategy>();
 }
 
 bool ScreenshotController::hasImage() const
@@ -40,176 +22,194 @@ bool ScreenshotController::hasImage() const
     return !m_currentImage.isNull();
 }
 
-void ScreenshotController::captureFullScreen(QWidget *windowToHide)
+QPixmap ScreenshotController::currentImage() const
 {
-    // Если передали окно — скрываем его на время захвата (чтобы не попасть в скриншот)
-    bool wasMax = false;
-    QRect originalGeom;
-    if (windowToHide) {
-        wasMax = windowToHide->isMaximized();
-        originalGeom = windowToHide->geometry();
-        windowToHide->hide();
-        // даём время скрыться
-        QThread::msleep(200);
-    }
+    return m_currentImage;
+}
 
-    m_captureManager.setStrategy(std::make_unique<FullScreenCaptureStrategy>());
-    QPixmap screenshot = m_captureManager.capture();
+void ScreenshotController::setImage(const QPixmap &pixmap)
+{
+    m_currentImage = pixmap;
+    emit imageChanged();
+}
 
-    if (windowToHide) {
-        windowToHide->show();
-        if (wasMax) windowToHide->showMaximized(); else windowToHide->setGeometry(originalGeom);
-        windowToHide->activateWindow();
-        windowToHide->raise();
-    }
-
-    if (screenshot.isNull()) {
-        emit errorOccured("Не удалось сделать скриншот экрана.");
+void ScreenshotController::captureFullScreen(QWidget *parentWidget)
+{
+    if (!parentWidget) {
+        emit errorOccured("Не удалось получить окно приложения.");
         return;
     }
 
-    setImage(screenshot);
-    emit infoMessage("Скриншот сделан.");
-}
+    parentWidget->hide();
 
-void ScreenshotController::startAreaSelection(QWidget *windowToHide)
-{
-    // Скрываем окно, делаем полноэкранный снимок, показываем overlay и ждем выбор
-    bool wasMax = false;
-    QRect originalGeom;
-    if (windowToHide) {
-        wasMax = windowToHide->isMaximized();
-        originalGeom = windowToHide->geometry();
-        windowToHide->hide();
-    }
+    // Даём Qt время убрать окно с экрана
+    QTimer::singleShot(100, this, [this, parentWidget]() {
+        QPixmap pixmap = m_fullScreenStrategy->capture();
 
-    // небольшой таймаут — чтобы окно успело скрыться
-    QTimer::singleShot(100, this, [this, windowToHide, wasMax, originalGeom]() {
-        // 1. Захват полного экрана
-        m_captureManager.setStrategy(std::make_unique<FullScreenCaptureStrategy>());
-        m_fullScreenShot = m_captureManager.capture();
+        parentWidget->show();
+        parentWidget->raise();
+        parentWidget->activateWindow();
 
-        if (m_fullScreenShot.isNull()) {
-            emit errorOccured("Не удалось сделать снимок экрана для выбора области.");
-            if (windowToHide) {
-                windowToHide->show();
-                if (wasMax) windowToHide->showMaximized(); else windowToHide->setGeometry(originalGeom);
-                windowToHide->activateWindow();
-                windowToHide->raise();
-            }
+        if (pixmap.isNull()) {
+            emit errorOccured("Не удалось сделать скриншот экрана.");
             return;
         }
 
-        // 2. Создаем overlay
-        RectangleSelectionOverlay *overlay = new RectangleSelectionOverlay();
-        overlay->setAttribute(Qt::WA_DeleteOnClose);
-
-        // сигнал - отмена
-        connect(overlay, &RectangleSelectionOverlay::selectionCancelled, this, [this, windowToHide, wasMax, originalGeom]() {
-            if (windowToHide) {
-                windowToHide->show();
-                if (wasMax) windowToHide->showMaximized(); else windowToHide->setGeometry(originalGeom);
-                windowToHide->activateWindow();
-                windowToHide->raise();
-            }
-        });
-
-        // сигнал - завершение выбора
-        connect(overlay, &RectangleSelectionOverlay::selectionCompleted, this,
-                [this, overlay, windowToHide, wasMax, originalGeom](const QRect &area) {
-                    // закрываем overlay (он удалится автоматически)
-                    overlay->close();
-
-                    if (!area.isValid() || area.width() <= 10 || area.height() <= 10) {
-                        emit errorOccured("Выделенная область слишком мала или некорректна.");
-                    } else {
-                        QScreen *primaryScreen = QGuiApplication::primaryScreen();
-                        if (!primaryScreen) {
-                            emit errorOccured("Не удалось получить экран.");
-                        } else {
-                            qreal dpr = primaryScreen->devicePixelRatio();
-                            QRect scaledArea(
-                                qRound(area.x() * dpr),
-                                qRound(area.y() * dpr),
-                                qRound(area.width() * dpr),
-                                qRound(area.height() * dpr)
-                                );
-
-                            QRect intersected = scaledArea.intersected(m_fullScreenShot.rect());
-                            if (!intersected.isValid() || intersected.isEmpty()) {
-                                emit errorOccured("Выбранная область вне границ экрана.");
-                            } else {
-                                QPixmap areaScreenshot = m_fullScreenShot.copy(intersected);
-                                if (areaScreenshot.isNull()) {
-                                    emit errorOccured("Не удалось вырезать выбранную область.");
-                                } else {
-                                    areaScreenshot.setDevicePixelRatio(dpr);
-                                    setImage(areaScreenshot);
-                                    emit infoMessage("Область захвачена.");
-                                }
-                            }
-                        }
-                    }
-
-                    // Восстанавливаем окно (MainWindow)
-                    if (windowToHide) {
-                        windowToHide->show();
-                        if (wasMax) windowToHide->showMaximized(); else windowToHide->setGeometry(originalGeom);
-                        windowToHide->activateWindow();
-                        windowToHide->raise();
-                    }
-                });
-
-        // также на случай закрытия overlay — восстановим окно
-        connect(overlay, &QObject::destroyed, this, [windowToHide, wasMax, originalGeom]() {
-            if (windowToHide) {
-                windowToHide->show();
-                if (wasMax) windowToHide->showMaximized(); else windowToHide->setGeometry(originalGeom);
-                windowToHide->activateWindow();
-                windowToHide->raise();
-            }
-        });
-
-        overlay->showFullScreen();
+        setImage(pixmap);
+        emit infoMessage("Скриншот экрана сделан");
     });
 }
 
-bool ScreenshotController::saveImageToFile(QWidget *parent)
+void ScreenshotController::startAreaSelection(QWidget *parentWidget)
 {
-    if (m_currentImage.isNull()) {
-        emit errorOccured("Нет изображения для сохранения.");
-        return false;
+    if (!parentWidget) {
+        emit errorOccured("Не удалось получить окно приложения.");
+        return;
     }
 
-    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-    QString defaultFileName = QDir::homePath() + "/Снимок_" + timestamp + ".png";
+    // 1. Скрываем главное окно
+    parentWidget->hide();
 
-    QString fileName = QFileDialog::getSaveFileName(
-        parent,
-        "Сохранить скриншот",
-        defaultFileName,
-        m_fileExportService.formatFilter()
-        );
+    // 2. Даём Qt время убрать его с экрана
+    QTimer::singleShot(100, this, [this, parentWidget]() {
 
-    if (fileName.isEmpty()) return false;
+        if (m_overlay) {
+            m_overlay->close();
+            m_overlay->deleteLater();
+        }
 
-    bool ok = m_fileExportService.saveToFile(m_currentImage, fileName);
-    if (!ok) {
-        emit errorOccured("Не удалось сохранить файл.");
-        return false;
+        m_overlay = new RectangleSelectionOverlay();
+        m_overlay->show();
+        m_overlay->raise();
+        m_overlay->activateWindow();
+
+        // Выбор завершён
+        connect(m_overlay, &RectangleSelectionOverlay::selectionCompleted,
+                this, &ScreenshotController::onAreaSelected);
+
+        // Отмена выбора — возвращаем окно
+        connect(m_overlay, &RectangleSelectionOverlay::selectionCancelled,
+                this, [this, parentWidget]() {
+                    parentWidget->show();
+                    parentWidget->raise();
+                    parentWidget->activateWindow();
+                    emit infoMessage("Выделение области отменено");
+                });
+    });
+}
+
+
+
+void ScreenshotController::onAreaSelected(const QRect &rect)
+{
+    if (rect.isNull()) {
+        emit errorOccured("Выделена пустая область.");
+        return;
     }
 
-    emit infoMessage(QString("Скриншот сохранен в:\n%1").arg(fileName));
-    return true;
+    QRect captureRect = rect;
+
+    // Убираем overlay
+    if (m_overlay) {
+        m_overlay->hide();
+        m_overlay->deleteLater();
+        m_overlay = nullptr;
+    }
+
+    QWidget *mainWindow = qobject_cast<QWidget*>(parent());
+
+    // Даём Qt время убрать overlay
+    QTimer::singleShot(50, this, [this, captureRect, mainWindow]() {
+
+        QScreen *screen = QGuiApplication::primaryScreen();
+        if (!screen) {
+            emit errorOccured("Не удалось получить экран.");
+            return;
+        }
+
+        QPixmap pixmap = screen->grabWindow(
+            0,
+            captureRect.x(),
+            captureRect.y(),
+            captureRect.width(),
+            captureRect.height()
+            );
+
+        // Возвращаем главное окно
+        if (mainWindow) {
+            mainWindow->show();
+            mainWindow->raise();
+            mainWindow->activateWindow();
+        }
+
+        if (pixmap.isNull()) {
+            emit errorOccured("Не удалось сделать скриншот области.");
+            return;
+        }
+
+        setImage(pixmap);
+        emit infoMessage("Скриншот области сделан");
+    });
 }
 
 void ScreenshotController::copyImageToClipboard()
 {
-    if (m_currentImage.isNull()) {
+    if (!hasImage()) {
         emit errorOccured("Нет изображения для копирования.");
         return;
     }
 
-    m_clipboardService.copyToClipboard(m_currentImage);
-    emit infoMessage("Скриншот скопирован в буфер обмена.");
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setPixmap(m_currentImage);
+
+    emit infoMessage("Скриншот скопирован в буфер обмена");
+}
+
+bool ScreenshotController::saveImageToFile(QWidget *parentWidget)
+{
+    if (!hasImage()) {
+        emit errorOccured("Нет изображения для сохранения.");
+        return false;
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        parentWidget,
+        "Сохранить скриншот",
+        QString(),
+        fileDialogFilter()
+        );
+
+    if (filePath.isEmpty())
+        return false;
+
+    QString format = formatFromExtension(filePath);
+    bool success = m_currentImage.save(filePath, format.toUtf8().constData());
+
+    if (!success) {
+        emit errorOccured("Не удалось сохранить файл.");
+        return false;
+    }
+
+    emit infoMessage("Скриншот сохранён");
+    return true;
+}
+
+QString ScreenshotController::fileDialogFilter() const
+{
+    return "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;All Files (*.*)";
+}
+
+QString ScreenshotController::formatFromExtension(const QString &filePath) const
+{
+    QFileInfo info(filePath);
+    QString ext = info.suffix().toLower();
+
+    static const QMap<QString, QString> map = {
+        {"png", "PNG"},
+        {"jpg", "JPG"},
+        {"jpeg", "JPG"},
+        {"bmp", "BMP"}
+    };
+
+    return map.value(ext, "PNG");
 }
