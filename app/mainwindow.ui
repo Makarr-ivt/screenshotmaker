@@ -84,16 +84,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QPushButton" name="exitButton">
-        <property name="toolTip">
-         <string>Закрыть приложение</string>
-        </property>
-        <property name="text">
-         <string>Выход</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item>

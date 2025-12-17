@@ -22,7 +22,6 @@ private slots:
     void on_captureFullScreenButton_clicked();
     void on_captureAreaButton_clicked();
     void on_saveButton_clicked();
-    void on_exitButton_clicked();
     void on_copyToClipboardButton_clicked();
 
     // Сигналы от контроллера

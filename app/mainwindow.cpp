@@ -25,9 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_controller, &ScreenshotController::errorOccured, this, &MainWindow::onControllerError);
     connect(m_controller, &ScreenshotController::infoMessage, this, &MainWindow::onControllerInfo);
 
-    // Кнопка выхода
-    connect(ui->exitButton, &QPushButton::clicked, this, &MainWindow::close);
-
     // Инициализируем состояние UI
     m_viewer->clear();
     updateUIStates();
@@ -61,11 +58,6 @@ void MainWindow::on_saveButton_clicked()
         // Короткая визуальная подсказка на кнопке (временная)
         showTemporaryButtonFeedback(ui->saveButton, "Сохранено!");
     }
-}
-
-void MainWindow::on_exitButton_clicked()
-{
-    close();
 }
 
 void MainWindow::on_copyToClipboardButton_clicked()
